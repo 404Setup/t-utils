@@ -21,6 +21,7 @@ import java.util.Map;
  * to be that of the most recent release.
  * </p>
  */
+@SuppressWarnings("unused")
 public enum ProtocolVersion {
     UNKNOWN(-1),
     PLAY_1_7(3), PLAY_1_7_2(4), PLAY_1_7_6(5),

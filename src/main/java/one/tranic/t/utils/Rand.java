@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Range;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+@SuppressWarnings("unused")
 public class Rand {
     private static final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -14,6 +15,7 @@ public class Rand {
      * @return a randomly generated string of the specified length.
      * @throws IllegalArgumentException if the length is not between 1 and 56.
      */
+    @SuppressWarnings("all")
     public static String generateRandomId(@Range(from = 1, to = 56) int length) throws IllegalArgumentException {
         if (length < 1 || length > 56) {
             throw new IllegalArgumentException("Length must be between 1 and 56.");

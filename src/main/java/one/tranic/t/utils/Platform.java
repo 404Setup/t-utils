@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
  *     <li>{@link #Folia}</li>
  * </ul>
  */
+@SuppressWarnings("unused")
 public enum Platform {
     /**
      * Represents the Velocity platform.

@@ -1,5 +1,6 @@
 package one.tranic.t.utils;
 
+@SuppressWarnings("unused")
 public class Command {
     public static String getName(String name) {
         String n = name;
