@@ -198,6 +198,30 @@ public class Collections {
     }
 
     /**
+     * Creates a new hash set with the specified initial capacity.
+     *
+     * @param initialCapacity the initial capacity of the hash set; must be non-negative
+     * @return a newly created hash set instance with the specified initial capacity
+     */
+    public static <T> Set<T> newHashSet(@Range(from = 0, to = Integer.MAX_VALUE) int initialCapacity) {
+        return fastutil ? new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(initialCapacity) : new HashSet<>(initialCapacity);
+    }
+
+    /**
+     * Creates a new HashSet containing the provided elements.
+     *
+     * @param elements the elements to be added to the new HashSet; must not be null
+     * @return a new HashSet containing the specified elements
+     */
+    @SafeVarargs
+    public static <T> Set<T> newHashSet(@NotNull T... elements) {
+        if (fastutil) return new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(elements);
+        Set<T> set = new HashSet<>(elements.length);
+        java.util.Collections.addAll(set, elements);
+        return set;
+    }
+
+    /**
      * Creates a new unmodifiable empty set.
      *
      * @param <T> the type of elements that the set can hold
@@ -232,16 +256,6 @@ public class Collections {
         List<T> list = new ArrayList<>(elements.length);
         java.util.Collections.addAll(list, elements);
         return Set.copyOf(list);
-    }
-
-    /**
-     * Creates a new hash set with the specified initial capacity.
-     *
-     * @param initialCapacity the initial capacity of the hash set; must be non-negative
-     * @return a newly created hash set instance with the specified initial capacity
-     */
-    public static <T> Set<T> newHashSet(@Range(from = 0, to = Integer.MAX_VALUE) int initialCapacity) {
-        return fastutil ? new it.unimi.dsi.fastutil.objects.ObjectOpenHashSet<>(initialCapacity) : new HashSet<>(initialCapacity);
     }
 
     /**
