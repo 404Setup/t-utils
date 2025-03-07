@@ -1,6 +1,5 @@
 package one.tranic.t.utils;
 
-import one.tranic.t.thread.Sys;
 import org.intellij.lang.annotations.Flow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
@@ -19,7 +18,7 @@ import java.util.function.Predicate;
  */
 @SuppressWarnings("unused")
 public class Collections {
-    private static final boolean fastutil = Sys.hasClass("it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap");
+    private static final boolean fastutil = Reflect.hasClass("it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap");
 
     /**
      * Creates a new hash map that maps keys of type {@code K} to integer values.

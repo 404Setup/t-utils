@@ -5,11 +5,11 @@ plugins {
     idea
     signing
 
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    id("com.vanniktech.maven.publish") version "0.31.0"
 }
 
 group = "one.tranic"
-version = "1.2.1"
+version = "1.2.2"
 
 repositories {
     mavenCentral()
@@ -17,7 +17,6 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
-    implementation("one.tranic:t-thread:1.0.0")
 
     compileOnly("it.unimi.dsi:fastutil:8.5.15")
 }

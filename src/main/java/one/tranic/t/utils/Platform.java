@@ -1,6 +1,5 @@
 package one.tranic.t.utils;
 
-import one.tranic.t.thread.Sys;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -200,6 +199,6 @@ public enum Platform {
      * @return true if the class exists in the classpath; false otherwise.
      */
     public boolean is() {
-        return Sys.hasClass(classPath);
+        return Reflect.hasClass(classPath);
     }
 }
