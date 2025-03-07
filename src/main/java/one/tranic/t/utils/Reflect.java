@@ -40,4 +40,18 @@ public class Reflect {
             return false;
         }
     }
+
+    /**
+     * Retrieves a {@code Class} object associated with the fully qualified name of a class.
+     *
+     * @param className the fully qualified name of the class to retrieve.
+     * @return the {@code Class} object for the given name, or {@code null} if the class cannot be found.
+     */
+    public static Class<?> getClass(String className) {
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
 }
