@@ -38,7 +38,7 @@ public enum ProtocolVersion {
     PLAY_1_18(757), PLAY_1_18_2(758),
     PLAY_1_19(759), PLAY_1_19_1(760), PLAY_1_19_3(761), PLAY_1_19_4(762),
     PLAY_1_20(763), PLAY_1_20_2(764), PLAY_1_20_3(765), PLAY_1_20_5(766),
-    PLAY_1_21(767), PLAY_1_21_2(768), PLAY_1_21_4(769), PLAY_1_21_5(770);
+    PLAY_1_21(767), PLAY_1_21_2(768), PLAY_1_21_4(769), PLAY_1_21_5(770), PLAY_1_21_6(771),;
 
     private static final int MINIMUM_SUPPORTED_PROTOCOL_VERSION = 3;
     private static final Map<Integer, ProtocolVersion> PROTOCOL_VERSION_MAP = Collections.newHashMap();
