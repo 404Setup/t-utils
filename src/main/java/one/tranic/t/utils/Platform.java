@@ -20,47 +20,49 @@ public enum Platform {
      * Represents the Velocity platform.
      * Velocity is a modern Minecraft proxy server designed for high performance and flexibility.
      */
-    Velocity("com.velocitypowered.api.proxy.Proxy"),
+    Velocity("Velocity", "com.velocitypowered.api.proxy.ProxyServer"),
 
     /**
      * Represents the BungeeCord platform.
      * BungeeCord is a classic Minecraft proxy server.
      */
-    BungeeCord("net.md_5.bungee.api.CommandSender"),
+    BungeeCord("BungeeCord", "net.md_5.bungee.api.CommandSender"),
 
     /**
      * Represents the Spigot platform.
      * Spigot is a highly optimized Minecraft server software, built from the vanilla Minecraft server,
      * and is widely used for plugin support and performance improvements.
      */
-    Spigot("org.bukkit.Bukkit"),
+    Spigot("Spigot", "org.bukkit.Bukkit"),
 
     /**
      * Represents the Paper platform.
      * Paper is a fork of Spigot that further optimizes server performance and adds additional features for plugins.
      */
-    Paper("io.papermc.paper.util.MCUtil"),
+    Paper("Paper", "io.papermc.paper.util.MCUtil"),
 
     /**
      * Represents the ShreddedPaper platform.
      * ShreddedPaper is a highly specialized fork of Paper, designed for improved threading in Minecraft servers.
      */
-    ShreddedPaper("io.multipaper.shreddedpaper.threading.ShreddedPaperTickThread"),
+    ShreddedPaper("ShreddedPaper", "io.multipaper.shreddedpaper.threading.ShreddedPaperTickThread"),
 
     /**
      * Represents the Folia platform.
      * Folia is a specialized fork of Paper with region-based multi-threading support for high-concurrency environments.
      */
-    Folia("io.papermc.paper.threadedregions.commands.CommandServerHealth");
+    Folia("Folia", "io.papermc.paper.threadedregions.commands.CommandServerHealth");
 
     /**
      * A cached value of the detected platform. The platform is only determined once using reflection
      * and the result is cached for future calls to {@link #get()}.
      */
     private static Platform platform;
-    private final String classPath;
+    private final String name;
+    private final String[] classPath;
 
-    Platform(String classPath) {
+    Platform(String name, String... classPath) {
+        this.name = name;
         this.classPath = classPath;
     }
 
@@ -124,15 +126,12 @@ public enum Platform {
      * @throws IllegalArgumentException if the platform name is unknown
      */
     public static @NotNull Platform of(@NotNull String name) {
-        return switch (name.toLowerCase()) {
-            case "velocity" -> Velocity;
-            case "bungeecord" -> BungeeCord;
-            case "spigot" -> Spigot;
-            case "paper" -> Paper;
-            case "shreddedpaper" -> ShreddedPaper;
-            case "folia" -> Folia;
-            default -> throw new IllegalArgumentException("Unknown platform: " + name);
-        };
+        var n1 = name.toLowerCase();
+        for (Platform p : values()) {
+            if (p.name.toLowerCase().equals(n1))
+                return p;
+        }
+        throw new IllegalArgumentException("Unknown platform: " + name);
     }
 
     /**
@@ -163,25 +162,11 @@ public enum Platform {
      */
     @Override
     public @NotNull String toString() {
-        return switch (this) {
-            case Velocity -> "velocity";
-            case BungeeCord -> "bungeecord";
-            case Spigot -> "spigot";
-            case Paper -> "paper";
-            case ShreddedPaper -> "shreddedpaper";
-            case Folia -> "folia";
-        };
+        return name.toLowerCase();
     }
 
     public @NotNull String toRawString() {
-        return switch (this) {
-            case Velocity -> "Velocity";
-            case BungeeCord -> "BungeeCord";
-            case Spigot -> "Spigot";
-            case Paper -> "Paper";
-            case ShreddedPaper -> "ShreddedPaper";
-            case Folia -> "Folia";
-        };
+        return name;
     }
 
     /**
@@ -189,7 +174,7 @@ public enum Platform {
      *
      * @return the class path of the current application.
      */
-    public String getClassPath() {
+    public String[] getClassPath() {
         return classPath;
     }
 
@@ -199,6 +184,10 @@ public enum Platform {
      * @return true if the class exists in the classpath; false otherwise.
      */
     public boolean is() {
-        return Reflect.hasClass(classPath);
+        if (classPath.length == 1) return Reflect.hasClass(classPath[0]);
+        for (String classPath : classPath)
+            if (Reflect.hasClass(classPath))
+                return true;
+        return false;
     }
 }
