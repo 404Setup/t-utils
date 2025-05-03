@@ -1,5 +1,8 @@
 package one.tranic.t.utils;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.reflect.Modifier;
 
 /**
@@ -16,7 +19,7 @@ public class Reflect {
      * @throws IllegalArgumentException if the specified field is not static.
      * @throws RuntimeException         if the field cannot be accessed or assigned.
      */
-    public static void assignToStaticFieldIfUninitialized(Class<?> targetClass, String fieldName, Object value, boolean debug) throws NoSuchFieldException, IllegalAccessException {
+    public static void assignToStaticFieldIfUninitialized(@NotNull Class<?> targetClass, @NotNull String fieldName, @NotNull Object value) throws NoSuchFieldException, IllegalAccessException {
         var field = targetClass.getDeclaredField(fieldName);
 
         if (!Modifier.isStatic(field.getModifiers()))
@@ -32,7 +35,7 @@ public class Reflect {
      * @param className the fully qualified name of the class to check.
      * @return {@code true} if the class exists; {@code false} otherwise.
      */
-    public static boolean hasClass(String className) {
+    public static boolean hasClass(@NotNull String className) {
         try {
             Class.forName(className);
             return true;
@@ -47,7 +50,7 @@ public class Reflect {
      * @param className the fully qualified name of the class to retrieve.
      * @return the {@code Class} object for the given name, or {@code null} if the class cannot be found.
      */
-    public static Class<?> getClass(String className) {
+    public static @Nullable Class<?> getClass(String className) {
         try {
             return Class.forName(className);
         } catch (ClassNotFoundException e) {
