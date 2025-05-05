@@ -3,6 +3,7 @@ package one.tranic.t.utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Modifier;
 
 /**
@@ -27,6 +28,21 @@ public class Reflect {
         field.setAccessible(true);
         if (field.get(null) != null) return;
         field.set(null, value);
+    }
+
+    /**
+     * Retrieves a {@link MethodHandles.Lookup} instance for performing operations on the specified class.
+     *
+     * @param targetClass the class for which the {@link MethodHandles.Lookup} instance is created.
+     *                    Must not be null.
+     * @return a {@link MethodHandles.Lookup} instance for accessing private or otherwise inaccessible
+     * members of the specified class.
+     * @throws IllegalAccessException if the attempt to create the {@link MethodHandles.Lookup} instance
+     *                                violates security rules.
+     */
+    public static MethodHandles.Lookup getLookup(@NotNull Class<?> targetClass) throws IllegalAccessException {
+        var lookup1 = MethodHandles.lookup();
+        return MethodHandles.privateLookupIn(targetClass, lookup1);
     }
 
     /**
