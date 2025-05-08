@@ -18,6 +18,8 @@ repositories {
 dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
 
+    compileOnly("com.github.luben:zstd-jni:1.5.7-3")
+    compileOnly("com.aayushatharva.brotli4j:brotli4j:1.18.0")
     compileOnly("it.unimi.dsi:fastutil:8.5.15")
 }
 

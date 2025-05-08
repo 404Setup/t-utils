@@ -1,6 +1,7 @@
 package one.tranic.t.utils;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -8,6 +9,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.logging.Logger;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * SimplePatcher is just an accidental byproduct, and I don't recommend anyone to use it.
@@ -299,20 +304,59 @@ public class SimplePatcher {
      *                     or if an I/O error occurs while reading or writing
      */
     public static void createPatch(File newFile, File oldFile, File patchFile) throws IOException {
-        if (!newFile.exists()) throw new IOException("New file does not exist");
-        if (!oldFile.exists()) throw new IOException("Old file does not exist");
-        if (!patchFile.getName().endsWith(".sdiff")) {
-            if (patchFile.exists()) throw new IOException("Patch file already exists");
-            else patchFile.createNewFile();
-        }
+        createPatch(newFile, oldFile, patchFile, null);
+    }
 
-        try (var newStream = new FileInputStream(newFile); var oldStream = new FileInputStream(oldFile)) {
-            try (var patchStream = (ByteArrayOutputStream) createPatch(newStream, oldStream);
-                 var patchFileOutputStream = new FileOutputStream(patchFile)) {
-                patchStream.writeTo(patchFileOutputStream);
-                patchFileOutputStream.flush();
-            }
+    /**
+     * Creates a binary patch file that describes the changes required to transform the contents
+     * of the old file into the new file.
+     * <p>
+     * The patch is written to the specified patch file, with optional compression applied.
+     *
+     * @param newFile     the file containing the target state after applying the patch
+     * @param oldFile     the file containing the original state before applying the patch
+     * @param patchFile   the file where the generated patch will be saved; must not yet exist
+     * @param compression the compression method to be applied to the patch output; may be null if no compression is desired
+     * @throws IOException if any of the input files do not exist, if the patch file already exists,
+     *                     or if an I/O error occurs while reading or writing files
+     */
+    public static void createPatch(File newFile, File oldFile, File patchFile,
+                                   @Nullable Compress compression) throws IOException {
+        validatePatchFiles(newFile, oldFile, patchFile);
+
+        try (InputStream newStream = new FileInputStream(newFile);
+             InputStream oldStream = new FileInputStream(oldFile);
+             OutputStream patchStream = new FileOutputStream(patchFile)) {
+
+            ByteArrayOutputStream patchData = (ByteArrayOutputStream) createPatch(newStream, oldStream);
+            processPatchData(patchData, patchStream, compression, true);
         }
+    }
+
+    /**
+     * Writes the patch data to the specified output stream, optionally compressing it.
+     * If a compression method is provided, the patch data will be compressed before writing
+     * to the output stream.
+     * <p>
+     * Otherwise, the raw patch data will be written directly.
+     *
+     * @param patchData    the {@link ByteArrayOutputStream} containing the patch data to be written
+     * @param outputStream the {@link OutputStream} where the patch data will be written
+     * @param compress     the {@link Compress} instance defining the compression algorithm to use;
+     *                     if null, no compression will be applied
+     * @throws IOException if an I/O error occurs during writing or compression
+     */
+    private static void writePatchData(ByteArrayOutputStream patchData,
+                                       OutputStream outputStream,
+                                       @Nullable Compress compress) throws IOException {
+        if (compress != null) {
+            try (var patchInputStream = new ByteArrayInputStream(patchData.toByteArray())) {
+                compress.compress(patchInputStream, outputStream);
+            }
+        } else {
+            patchData.writeTo(outputStream);
+        }
+        outputStream.flush();
     }
 
     /**
@@ -438,25 +482,34 @@ public class SimplePatcher {
      *
      * @param patch      the patch file containing the binary data with instructions for applying the patch
      * @param dst        the target file to which the patch will be applied
-     * @param outputFile the file where the patched content will be written; must not already exist
+     * @param outputFile the file where the patched content will be written; must not yet exist
      * @throws IOException if the patch file does not exist, the target file does not exist, the output
      *                     file already exists, or if an I/O error occurs during the process
      */
     public static void applyPatch(File patch, File dst, File outputFile) throws IOException {
-        if (!patch.exists()) throw new IOException("Patch file does not exist");
-        if (!dst.exists()) throw new IOException("Destination file does not exist");
-        if (!outputFile.getName().endsWith(".tmp")) {
-            if (outputFile.exists()) throw new IOException("Output file already exists");
-            else outputFile.createNewFile();
-        }
+        applyPatch(patch, dst, outputFile, null);
+    }
 
-        try (var pS = new FileInputStream(patch); var dS = new FileInputStream(dst)) {
-            try (ByteArrayOutputStream fPs = (ByteArrayOutputStream) SimplePatcher.applyPatch(pS, dS); var oS = Files.newOutputStream(outputFile.toPath())) {
-                fPs.writeTo(oS);
-                oS.flush();
+    public static void applyPatch(File patchFile, File targetFile, File outputFile,
+                                  @Nullable Compress compression) throws IOException {
+        validateFiles(patchFile, targetFile, outputFile);
+
+        try (InputStream patchStream = new FileInputStream(patchFile);
+             InputStream targetStream = new FileInputStream(targetFile);
+             OutputStream outputStream = Files.newOutputStream(outputFile.toPath())) {
+
+            ByteArrayOutputStream processedPatch = new ByteArrayOutputStream();
+            processPatchData(patchStream, processedPatch, compression, false);
+
+            try (InputStream processedPatchStream = new ByteArrayInputStream(processedPatch.toByteArray())) {
+                ByteArrayOutputStream patchedContent =
+                        (ByteArrayOutputStream) applyPatch(processedPatchStream, targetStream);
+                patchedContent.writeTo(outputStream);
+                outputStream.flush();
             }
         }
     }
+
 
     /**
      * Applies a binary patch file to a specified destination file and generates a new file with the patched content.
@@ -480,6 +533,83 @@ public class SimplePatcher {
     }
 
     /**
+     * Validates the existence and state of the provided files involved in the patching process.
+     *
+     * @param patchFile       the file containing the patch data to be validated
+     * @param destinationFile the file to which the patch will be applied
+     * @param outputFile      the file where the patched content will be written;
+     * @throws IOException if the patch file or destination file does not exist, the output file already
+     *                     exists and does not have a ".tmp" extension, or if an error occurs while
+     *                     creating a new output file
+     */
+    private static void validateFiles(File patchFile, File destinationFile, File outputFile) throws IOException {
+        if (!patchFile.exists()) throw new IOException("Patch file does not exist");
+        if (!destinationFile.exists()) throw new IOException("Destination file does not exist");
+
+        if (!outputFile.getName().endsWith(".tmp")) {
+            if (outputFile.exists()) throw new IOException("Output file already exists");
+            else outputFile.createNewFile();
+        }
+    }
+
+    /**
+     * Validates the provided files for creating or handling a binary patch.
+     *
+     * @param newFile   the file that represents the target state after applying the patch
+     * @param oldFile   the file that represents the original state before applying the patch
+     * @param patchFile the file where the generated patch will be saved;
+     * @throws IOException if the new file or old file does not exist, if the patch file already exists and has an invalid name,
+     *                     or if an I/O error occurs during file creation
+     */
+    private static void validatePatchFiles(File newFile, File oldFile, File patchFile) throws IOException {
+        if (!newFile.exists()) throw new IOException("New file does not exist");
+        if (!oldFile.exists()) throw new IOException("Old file does not exist");
+        if (!patchFile.getName().endsWith(".sdiff")) {
+            if (patchFile.exists()) throw new IOException("Patch file already exists");
+            else patchFile.createNewFile();
+        }
+    }
+
+    /**
+     * Processes the patch data by either compressing or writing the input directly to the output stream.
+     *
+     * @param input         the data source, which can be an InputStream or ByteArrayOutputStream, to be processed
+     * @param output        the OutputStream to which the processed data will be written
+     * @param compression   the optional Compress instance defining the compression or decompression method;
+     *                      may be null if no compression is required
+     * @param isCompressing a boolean indicating whether to compress or decompress the data if a
+     *                      compression method is provided
+     * @throws IOException if an I/O error occurs while reading from the input or writing to the output
+     */
+    private static void processPatchData(Object input, OutputStream output,
+                                         @Nullable Compress compression,
+                                         boolean isCompressing) throws IOException {
+        if (compression == null) {
+            if (input instanceof ByteArrayOutputStream) {
+                ((ByteArrayOutputStream) input).writeTo(output);
+            } else if (input instanceof InputStream inputStream) {
+                byte[] buffer = new byte[CHUNK_SIZE];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    output.write(buffer, 0, read);
+                }
+            }
+        } else {
+            if (isCompressing) {
+                try (ByteArrayInputStream dataStream =
+                             input instanceof ByteArrayOutputStream ?
+                                     new ByteArrayInputStream(((ByteArrayOutputStream) input).toByteArray()) :
+                                     (ByteArrayInputStream) input) {
+                    compression.compress(dataStream, output);
+                }
+            } else {
+                compression.decompress((InputStream) input, output);
+            }
+        }
+        output.flush();
+    }
+
+    /**
      * Reads all the bytes from the provided InputStream and returns them as a byte array.
      *
      * @param is the InputStream to read data from
@@ -497,5 +627,102 @@ public class SimplePatcher {
 
         buffer.flush();
         return buffer.toByteArray();
+    }
+
+    public enum Compress {
+        DEFLATE(".deflate") {
+            @Override
+            protected InputStream createDecompressStream(InputStream is) {
+                return new InflaterInputStream(is);
+            }
+
+            @Override
+            protected OutputStream createCompressStream(OutputStream os) {
+                return new DeflaterOutputStream(os);
+            }
+        },
+        GZIP(".gz") {
+            @Override
+            protected InputStream createDecompressStream(InputStream is) throws IOException {
+                return new GZIPInputStream(is);
+            }
+
+            @Override
+            protected OutputStream createCompressStream(OutputStream os) throws IOException {
+                return new GZIPOutputStream(os);
+            }
+        },
+        ZSTD(".zst", "com.github.luben.zstd.ZstdDecompressCtx") {
+            @Override
+            protected InputStream createDecompressStream(InputStream is) throws IOException {
+                checkDependencyPresent("ZSTD decompression");
+                return new com.github.luben.zstd.ZstdInputStream(is);
+            }
+
+            @Override
+            protected OutputStream createCompressStream(OutputStream os) throws IOException {
+                checkDependencyPresent("ZSTD compression");
+                return new com.github.luben.zstd.ZstdOutputStream(os);
+            }
+        },
+        BROTLI(".br", "com.aayushatharva.brotli4j.decoder.BrotliInputStream") {
+            @Override
+            protected InputStream createDecompressStream(InputStream is) throws IOException {
+                checkDependencyPresent("BROTLI decompression");
+                return new com.aayushatharva.brotli4j.decoder.BrotliInputStream(is);
+            }
+
+            @Override
+            protected OutputStream createCompressStream(OutputStream os) throws IOException {
+                checkDependencyPresent("BROTLI compression");
+                return new com.aayushatharva.brotli4j.encoder.BrotliOutputStream(os);
+            }
+        };
+
+        private static final int BUFFER_SIZE = 1024;
+        private final String fileExtension;
+        private final boolean hasDependency;
+
+        Compress(String fileExtension) {
+            this(fileExtension, null);
+        }
+
+        Compress(String fileExtension, String dependencyClass) {
+            this.fileExtension = fileExtension;
+            this.hasDependency = dependencyClass == null || Reflect.hasClass(dependencyClass);
+        }
+
+        private static void copyStream(InputStream is, OutputStream os) throws IOException {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                os.write(buffer, 0, len);
+            }
+        }
+
+        public String getFileExtension() {
+            return fileExtension;
+        }
+
+        protected void checkDependencyPresent(String operation) throws IOException {
+            if (!hasDependency)
+                throw new IOException(operation + " requires the " + name() + " library to be present on the classpath");
+        }
+
+        public void decompress(InputStream is, OutputStream os) throws IOException {
+            try (InputStream decompressStream = createDecompressStream(is)) {
+                copyStream(decompressStream, os);
+            }
+        }
+
+        public void compress(InputStream is, OutputStream os) throws IOException {
+            try (OutputStream compressStream = createCompressStream(os)) {
+                copyStream(is, compressStream);
+            }
+        }
+
+        protected abstract InputStream createDecompressStream(InputStream is) throws IOException;
+
+        protected abstract OutputStream createCompressStream(OutputStream os) throws IOException;
     }
 }
