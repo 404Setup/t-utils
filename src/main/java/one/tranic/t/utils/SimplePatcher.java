@@ -3,14 +3,189 @@ package one.tranic.t.utils;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+/**
+ * SimplePatcher is just an accidental byproduct, and I don't recommend anyone to use it.
+ * <p>
+ * Example:
+ * <pre>{@code
+ * package one.tranic.goldpiglin.command;
+ *
+ * import one.tranic.goldpiglin.GoldPiglin;
+ * import one.tranic.goldpiglin.common.GoldPiglinLogger;
+ * import one.tranic.t.utils.SimplePatcher;
+ * import org.bukkit.command.Command;
+ * import org.bukkit.command.CommandSender;
+ * import org.bukkit.plugin.java.JavaPlugin;
+ * import org.jetbrains.annotations.NotNull;
+ *
+ * import java.io.ByteArrayOutputStream;
+ * import java.io.FileInputStream;
+ * import java.io.IOException;
+ * import java.io.OutputStream;
+ * import java.nio.file.Files;
+ * import java.nio.file.Path;
+ * import java.util.ArrayList;
+ * import java.util.List;
+ * import java.util.stream.Stream;
+ *
+ * public class DiffCommand extends Command {
+ *     private final static List<String> INTERNAL_ERROR = List.of("Internal error");
+ *     private final static Path DIFF_DIR = GoldPiglin.getPlugin().getDataFolder().toPath().getParent().resolve("diff");
+ *     private final static Path Plugin_DIR = GoldPiglin.getPlugin().getDataFolder().toPath().getParent();
+ *
+ *     public DiffCommand(JavaPlugin plugin) {
+ *         super("diff");
+ *         this.setUsage("/diff <create> jar1 jar2 | /diff <merge> patch jar");
+ *
+ *         if (!DIFF_DIR.toFile().exists()) {
+ *             try {
+ *                 Files.createDirectories(DIFF_DIR);
+ *             } catch (IOException e) {
+ *                 e.printStackTrace();
+ *             }
+ *         }
+ *     }
+ *
+ *     private static List<String> getFiles(String prefix) {
+ *         try (final Stream<Path> files = Files.list(Plugin_DIR)) {
+ *             return files.filter(path ->
+ *                             path.toString().endsWith("." + prefix) && path.toFile().isFile()
+ *                     )
+ *                     .map(Path::getFileName)
+ *                     .map(Path::toString).toList();
+ *         } catch (IOException e) {
+ *             e.printStackTrace();
+ *             return INTERNAL_ERROR;
+ *         }
+ *     }
+ *
+ *     public static List<String> getJarFiles() {
+ *         return getFiles("jar");
+ *     }
+ *
+ *     public static List<String> getDiffFiles() {
+ *         return getFiles("diff");
+ *     }
+ *
+ *     @Override
+ *     public boolean execute(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
+ *         if (args.length == 0) {
+ *             return true;
+ *         }
+ *         if (args[0].equalsIgnoreCase("create")) {
+ *             if (args.length < 3) {
+ *                 sender.sendMessage("Usage: /diff create <jar1> <jar2>");
+ *                 return true;
+ *             }
+ *             return runCreateDiff(sender, commandLabel, args);
+ *         }
+ *         if (args[0].equalsIgnoreCase("merge")) {
+ *             if (args.length < 3) {
+ *                 sender.sendMessage("Usage: /diff merge <patch> <jar>");
+ *                 return true;
+ *             }
+ *             return runMergeDiff(sender, commandLabel, args);
+ *         }
+ *         return true;
+ *     }
+ *
+ *     private boolean runCreateDiff(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
+ *         GoldPiglinLogger.logger.info("Args: {}", String.join(" ", args));
+ *         var jar1 = args[1];
+ *         var jar2 = args[2];
+ *
+ *         var j1 = Plugin_DIR.resolve(jar1).toFile();
+ *         var j2 = Plugin_DIR.resolve(jar2).toFile();
+ *
+ *         if (!j1.exists() || !j2.exists()) {
+ *             sender.sendMessage("One of the jars does not exist");
+ *             return true;
+ *         }
+ *
+ *         try {
+ *             var diff = DIFF_DIR.resolve(jar1 + "-" + jar2 + ".diff");
+ *             var diffFile = diff.toFile();
+ *             if (!diffFile.exists()) {
+ *                 diffFile.createNewFile();
+ *             } else {
+ *                 diffFile.delete();
+ *                 diffFile.createNewFile();
+ *             }
+ *             try (var fis1 = new FileInputStream(j1); var fis2 = new FileInputStream(j2)) {
+ *                 try (ByteArrayOutputStream output = (ByteArrayOutputStream) SimplePatcher.createPatch(fis1, fis2); OutputStream fos = Files.newOutputStream(diff)) {
+ *                     output.writeTo(fos);
+ *                     fos.flush();
+ *                 }
+ *                 sender.sendMessage("Diff created at " + diff.toAbsolutePath());
+ *             }
+ *
+ *         } catch (IOException e) {
+ *             sender.sendMessage("Error: " + e.getMessage());
+ *             e.printStackTrace();
+ *         }
+ *
+ *         return true;
+ *     }
+ *
+ *     private boolean runMergeDiff(@NotNull CommandSender sender, @NotNull String commandLabel, String[] args) {
+ *         GoldPiglinLogger.logger.info("Args: {}", String.join(" ", args));
+ *         var patch = args[1];
+ *         var jar = args[2];
+ *
+ *         var p = DIFF_DIR.resolve(patch).toFile();
+ *         var j = Plugin_DIR.resolve(jar).toFile();
+ *         var j2 = Plugin_DIR.resolve(jar + ".new.jar");
+ *         try {
+ *             j2.toFile().createNewFile();
+ *         } catch (IOException e) {
+ *             e.printStackTrace();
+ *             sender.sendMessage("Error: " + e.getMessage());
+ *             return true;
+ *         }
+ *
+ *         try (var pS = new FileInputStream(p); var jS = new FileInputStream(j)) {
+ *             try (ByteArrayOutputStream fps = (ByteArrayOutputStream) SimplePatcher.applyPatch(pS, jS); var fos = Files.newOutputStream(j2)) {
+ *                 fps.writeTo(fos);
+ *                 fos.flush();
+ *             }
+ *         } catch (Exception exception) {
+ *             sender.sendMessage("Error: " + exception.getMessage());
+ *             exception.printStackTrace();
+ *             return true;
+ *         }
+ *
+ *         return false;
+ *     }
+ *
+ *     @Override
+ *     public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) {
+ *         List<String> list = new ArrayList<>();
+ *         if (args.length == 1) {
+ *             list.add("create");
+ *             list.add("merge");
+ *         }
+ *         if (args.length == 2) {
+ *             if (args[0].equalsIgnoreCase("create"))
+ *                 list.addAll(getJarFiles());
+ *             if (args[0].equalsIgnoreCase("merge"))
+ *                 list.addAll(getDiffFiles());
+ *         }
+ *         if (args.length == 3 && (args[0].equalsIgnoreCase("merge") || args[0].equalsIgnoreCase("create"))) {
+ *             list.addAll(getJarFiles());
+ *         }
+ *         return list;
+ *     }
+ * }
+ * }</pre>
+ */
 @SuppressWarnings("unused")
 @ApiStatus.Experimental
-// This class has not been tested for usability, please do not use it!
 public class SimplePatcher {
     private static final int CHUNK_SIZE = 4096;
     private static final byte COMMAND_EQUAL = 0;
@@ -20,17 +195,17 @@ public class SimplePatcher {
     /**
      * Creates a binary patch that transforms the contents of the source file into the destination file.
      *
-     * @param src the InputStream representing the source file's data
-     * @param dst the InputStream representing the destination file's data
+     * @param newFile the InputStream representing the source file's data
+     * @param oldFile the InputStream representing the destination file's data
      * @return an OutputStream containing the binary patch data
      * @throws IOException if an I/O error occurs while reading from the input streams or writing to the patch
      */
-    public static OutputStream createPatch(InputStream src, InputStream dst) throws IOException {
+    public static OutputStream createPatch(InputStream newFile, InputStream oldFile) throws IOException {
         ByteArrayOutputStream patchOutputStream = new ByteArrayOutputStream();
         DataOutputStream patch = new DataOutputStream(patchOutputStream);
 
-        byte[] srcData = readAllBytes(src);
-        byte[] dstData = readAllBytes(dst);
+        byte[] srcData = readAllBytes(newFile);
+        byte[] dstData = readAllBytes(oldFile);
 
         // Patch header
         patch.writeInt(srcData.length);
@@ -109,6 +284,58 @@ public class SimplePatcher {
 
         patch.flush();
         return patchOutputStream;
+    }
+
+    /**
+     * Creates a binary patch file that defines the changes required to transform the contents
+     * of the old file into the new file.
+     * <p>
+     * The patch is stored in the specified patch file.
+     *
+     * @param newFile   the file containing the target state after applying the patch
+     * @param oldFile   the file containing the original state before applying the patch
+     * @param patchFile the file where the generated patch will be saved; must not yet exist
+     * @throws IOException if any of the input files do not exist, if the patch file already exists,
+     *                     or if an I/O error occurs while reading or writing
+     */
+    public static void createPatch(File newFile, File oldFile, File patchFile) throws IOException {
+        if (!newFile.exists()) throw new IOException("New file does not exist");
+        if (!oldFile.exists()) throw new IOException("Old file does not exist");
+        if (!patchFile.getName().endsWith(".sdiff")) {
+            if (patchFile.exists()) throw new IOException("Patch file already exists");
+            else patchFile.createNewFile();
+        }
+
+        try (var newStream = new FileInputStream(newFile); var oldStream = new FileInputStream(oldFile)) {
+            try (var patchStream = (ByteArrayOutputStream) createPatch(newStream, oldStream);
+                 var patchFileOutputStream = new FileOutputStream(patchFile)) {
+                patchStream.writeTo(patchFileOutputStream);
+                patchFileOutputStream.flush();
+            }
+        }
+    }
+
+    /**
+     * Creates a temporary binary patch file that represents the differences between
+     * the specified new file and old file.
+     * <p>
+     * The temporary patch file is deleted if an exception occurs during its creation.
+     *
+     * @param newFile the file representing the new version of the content
+     * @param oldFile the file representing the old version of the content
+     * @return a temporary file containing the binary patch data
+     * @throws IOException if an I/O error occurs, such as issues reading the input files,
+     *                     writing the patch file, or if any of the required files does not exist
+     */
+    public static File createPatch(File newFile, File oldFile) throws IOException {
+        File patchFile = File.createTempFile("diff", ".sdiff");
+        try {
+            createPatch(newFile, oldFile, patchFile);
+            return patchFile;
+        } catch (IOException e) {
+            patchFile.delete();
+            throw new IOException(e);
+        }
     }
 
     /**
@@ -204,6 +431,52 @@ public class SimplePatcher {
         }
 
         return output;
+    }
+
+    /**
+     * Applies a binary patch to a target file and writes the patched content to an output file.
+     *
+     * @param patch      the patch file containing the binary data with instructions for applying the patch
+     * @param dst        the target file to which the patch will be applied
+     * @param outputFile the file where the patched content will be written; must not already exist
+     * @throws IOException if the patch file does not exist, the target file does not exist, the output
+     *                     file already exists, or if an I/O error occurs during the process
+     */
+    public static void applyPatch(File patch, File dst, File outputFile) throws IOException {
+        if (!patch.exists()) throw new IOException("Patch file does not exist");
+        if (!dst.exists()) throw new IOException("Destination file does not exist");
+        if (!outputFile.getName().endsWith(".tmp")) {
+            if (outputFile.exists()) throw new IOException("Output file already exists");
+            else outputFile.createNewFile();
+        }
+
+        try (var pS = new FileInputStream(patch); var dS = new FileInputStream(dst)) {
+            try (ByteArrayOutputStream fPs = (ByteArrayOutputStream) SimplePatcher.applyPatch(pS, dS); var oS = Files.newOutputStream(outputFile.toPath())) {
+                fPs.writeTo(oS);
+                oS.flush();
+            }
+        }
+    }
+
+    /**
+     * Applies a binary patch file to a specified destination file and generates a new file with the patched content.
+     *
+     * @param patch the file containing the patch data to be applied
+     * @param dst   the file representing the target to which the patch will be applied
+     * @return a temporary file containing the patched content after applying the patch
+     * @throws IOException if an I/O error occurs during patch application, such as issues reading or writing files,
+     *                     if the patch or destination file does not exist,
+     *                     or if the generated output file cannot be created
+     */
+    public static File applyPath(File patch, File dst) throws IOException {
+        File outputFile = File.createTempFile("diff", ".tmp");
+        try {
+            applyPatch(patch, dst, outputFile);
+            return outputFile;
+        } catch (IOException e) {
+            outputFile.delete();
+            throw new IOException(e);
+        }
     }
 
     /**
