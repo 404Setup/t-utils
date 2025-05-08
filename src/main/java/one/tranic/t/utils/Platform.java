@@ -4,54 +4,20 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Enum representing various Minecraft server platforms.
- * Supported platforms include:
- * <ul>
- *     <li>{@link #Velocity}</li>
- *     <li>{@link #BungeeCord}</li>
- *     <li>{@link #Spigot}</li>
- *     <li>{@link #Paper}</li>
- *     <li>{@link #ShreddedPaper}</li>
- *     <li>{@link #Folia}</li>
- * </ul>
  */
 @SuppressWarnings("unused")
 public enum Platform {
-    /**
-     * Represents the Velocity platform.
-     * Velocity is a modern Minecraft proxy server designed for high performance and flexibility.
-     */
     Velocity("Velocity", "com.velocitypowered.api.proxy.ProxyServer"),
-
-    /**
-     * Represents the BungeeCord platform.
-     * BungeeCord is a classic Minecraft proxy server.
-     */
     BungeeCord("BungeeCord", "net.md_5.bungee.api.CommandSender"),
-
-    /**
-     * Represents the Spigot platform.
-     * Spigot is a highly optimized Minecraft server software, built from the vanilla Minecraft server,
-     * and is widely used for plugin support and performance improvements.
-     */
     Spigot("Spigot", "org.bukkit.Bukkit"),
-
-    /**
-     * Represents the Paper platform.
-     * Paper is a fork of Spigot that further optimizes server performance and adds additional features for plugins.
-     */
     Paper("Paper", "io.papermc.paper.util.MCUtil"),
-
-    /**
-     * Represents the ShreddedPaper platform.
-     * ShreddedPaper is a highly specialized fork of Paper, designed for improved threading in Minecraft servers.
-     */
     ShreddedPaper("ShreddedPaper", "io.multipaper.shreddedpaper.threading.ShreddedPaperTickThread"),
-
-    /**
-     * Represents the Folia platform.
-     * Folia is a specialized fork of Paper with region-based multi-threading support for high-concurrency environments.
-     */
-    Folia("Folia", "io.papermc.paper.threadedregions.commands.CommandServerHealth");
+    Folia("Folia", "io.papermc.paper.threadedregions.commands.CommandServerHealth"),
+    Quilt("Quilt", "org.quiltmc.loader.api.QuiltLoader"),
+    Fabric("Fabric", "net.fabricmc.loader.FabricLoader"),
+    NeoForge("NeoForge", "net.neoforged.neoforge.common.NeoForge"),
+    Forge("Forge", "net.minecraftforge.fml.ModContainer"),
+    Unknown("Unknown", "Unknown");
 
     /**
      * A cached value of the detected platform. The platform is only determined once using reflection
@@ -67,63 +33,75 @@ public enum Platform {
     }
 
     /**
-     * Detects and returns the current platform.
-     * <p>
-     * This method uses reflection to check for specific platform classes and methods in the runtime
-     * environment, caching the result after the first check to avoid unnecessary overhead in future calls.
-     * </p>
+     * Retrieves the current {@link Platform} instance by detecting the underlying platform.
      *
-     * @return the detected {@link Platform}, or {@link Platform#Spigot} as the default if no other platform is found.
+     * @return the detected {@link Platform} instance, never null.
      */
     public static @NotNull Platform get() {
         if (platform != null) {
             return platform;
         }
 
-        // Test for Velocity platform
         if (Velocity.is()) {
             platform = Velocity;
             return platform;
         }
 
-        // Test for BungeeCord platform
         if (BungeeCord.is()) {
             platform = BungeeCord;
             return platform;
         }
 
-        // Test for Folia platform
         if (Folia.is()) {
             platform = Folia;
             return platform;
         }
 
-        // Test for ShreddedPaper platform
         if (ShreddedPaper.is()) {
             platform = ShreddedPaper;
             return platform;
         }
 
-        // Test for Paper platform
         if (Paper.is()) {
             platform = Paper;
             return platform;
         }
 
-        platform = Spigot;
-        return Spigot;
+        if (Spigot.is()) {
+            platform = Spigot;
+            return platform;
+        }
+
+        if (Quilt.is()) {
+            platform = Quilt;
+            return platform;
+        }
+
+        if (Fabric.is()) {
+            platform = Fabric;
+            return platform;
+        }
+
+        if (NeoForge.is()) {
+            platform = NeoForge;
+            return platform;
+        }
+
+        if (Forge.is()) {
+            platform = Forge;
+            return platform;
+        }
+
+        platform = Unknown;
+        return platform;
     }
 
     /**
-     * Returns the {@link Platform} corresponding to the provided platform name.
-     * <p>
-     * This method compares the provided platform name (case-insensitive) to known platforms
-     * and returns the appropriate enum constant.
-     * </p>
+     * Retrieves the {@link Platform} instance corresponding to the provided platform name.
+     * If the name does not match any known platform, the {@link Platform#Unknown} instance will be returned.
      *
-     * @param name the name of the platform (e.g., "velocity", "spigot")
-     * @return the corresponding {@link Platform} enum constant
-     * @throws IllegalArgumentException if the platform name is unknown
+     * @param name the name of the platform. Must not be null.
+     * @return the matching {@link Platform} instance, or {@link Platform#Unknown} if no match is found.
      */
     public static @NotNull Platform of(@NotNull String name) {
         var n1 = name.toLowerCase();
@@ -131,7 +109,7 @@ public enum Platform {
             if (p.name.toLowerCase().equals(n1))
                 return p;
         }
-        throw new IllegalArgumentException("Unknown platform: " + name);
+        return Unknown;
     }
 
     /**
@@ -147,11 +125,61 @@ public enum Platform {
     }
 
     /**
+     * Determines whether the current platform is a mod loader.
+     *
+     * @return true if the current platform is a mod loader; false otherwise.
+     */
+    public static boolean isModLoader() {
+        return get() == Quilt || get() == Fabric || get() == NeoForge || get() == Forge;
+    }
+
+    /**
+     * Determines whether the current platform is a proxy-based platform.
+     *
+     * @return true if the current platform is either Velocity or BungeeCord; false otherwise.
+     */
+    public static boolean isProxy() {
+        return get() == Velocity || get() == BungeeCord;
+    }
+
+    /**
+     * Determines whether the current server is a mixin of a mod loader and a Bukkit-based server.
+     *
+     * @return true if the server is both a mod loader (Forge, NeoForge, Quilt, or Fabric)
+     * and a Bukkit-based server (Spigot or Paper); false otherwise.
+     */
+    public static boolean isMixinServer() {
+        if (isProxy()) {
+            return false;
+        }
+
+        return isModLoaderPresent() && isBukkitBasedServer();
+    }
+
+    /**
+     * Checks if any mod loader is present in the current environment.
+     *
+     * @return true if Forge, NeoForge, Quilt, or Fabric is detected
+     */
+    public static boolean isModLoaderPresent() {
+        return Forge.is() || NeoForge.is() || Quilt.is() || Fabric.is();
+    }
+
+    /**
+     * Checks if the current server is Bukkit-based.
+     *
+     * @return true if Spigot or Paper is detected
+     */
+    public static boolean isBukkitBasedServer() {
+        return Spigot.is() || Paper.is();
+    }
+
+    /**
      * Determines whether the current environment supports multithreading features.
      *
      * @return true if the environment supports multithreading, false otherwise.
      */
-    public static boolean isMultithreading() {
+    public static boolean isMultithreadedBukkit() {
         return get() == Folia || get() == ShreddedPaper;
     }
 
