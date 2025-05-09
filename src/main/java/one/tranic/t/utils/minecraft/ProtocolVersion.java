@@ -1,4 +1,6 @@
-package one.tranic.t.utils;
+package one.tranic.t.utils.minecraft;
+
+import one.tranic.t.utils.Collections;
 
 import java.util.Map;
 
