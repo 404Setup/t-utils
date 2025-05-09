@@ -1,5 +1,6 @@
-package one.tranic.t.utils;
+package one.tranic.t.utils.diff;
 
+import one.tranic.t.utils.compress.ICompress;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,10 +10,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.logging.Logger;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-import java.util.zip.InflaterInputStream;
 
 /**
  * SimplePatcher is just an accidental byproduct, and I don't recommend anyone to use it.
@@ -321,7 +318,7 @@ public class SimplePatcher {
      *                     or if an I/O error occurs while reading or writing files
      */
     public static void createPatch(File newFile, File oldFile, File patchFile,
-                                   @Nullable Compress compression) throws IOException {
+                                   @Nullable ICompress compression) throws IOException {
         validatePatchFiles(newFile, oldFile, patchFile);
 
         try (InputStream newStream = new FileInputStream(newFile);
@@ -342,13 +339,13 @@ public class SimplePatcher {
      *
      * @param patchData    the {@link ByteArrayOutputStream} containing the patch data to be written
      * @param outputStream the {@link OutputStream} where the patch data will be written
-     * @param compress     the {@link Compress} instance defining the compression algorithm to use;
+     * @param compress     the {@link ICompress} instance defining the compression algorithm to use;
      *                     if null, no compression will be applied
      * @throws IOException if an I/O error occurs during writing or compression
      */
     private static void writePatchData(ByteArrayOutputStream patchData,
                                        OutputStream outputStream,
-                                       @Nullable Compress compress) throws IOException {
+                                       @Nullable ICompress compress) throws IOException {
         if (compress != null) {
             try (var patchInputStream = new ByteArrayInputStream(patchData.toByteArray())) {
                 compress.compress(patchInputStream, outputStream);
@@ -491,7 +488,7 @@ public class SimplePatcher {
     }
 
     public static void applyPatch(File patchFile, File targetFile, File outputFile,
-                                  @Nullable Compress compression) throws IOException {
+                                  @Nullable ICompress compression) throws IOException {
         validateFiles(patchFile, targetFile, outputFile);
 
         try (InputStream patchStream = new FileInputStream(patchFile);
@@ -582,7 +579,7 @@ public class SimplePatcher {
      * @throws IOException if an I/O error occurs while reading from the input or writing to the output
      */
     private static void processPatchData(Object input, OutputStream output,
-                                         @Nullable Compress compression,
+                                         @Nullable ICompress compression,
                                          boolean isCompressing) throws IOException {
         if (compression == null) {
             if (input instanceof ByteArrayOutputStream) {
@@ -627,102 +624,5 @@ public class SimplePatcher {
 
         buffer.flush();
         return buffer.toByteArray();
-    }
-
-    public enum Compress {
-        DEFLATE(".deflate") {
-            @Override
-            protected InputStream createDecompressStream(InputStream is) {
-                return new InflaterInputStream(is);
-            }
-
-            @Override
-            protected OutputStream createCompressStream(OutputStream os) {
-                return new DeflaterOutputStream(os);
-            }
-        },
-        GZIP(".gz") {
-            @Override
-            protected InputStream createDecompressStream(InputStream is) throws IOException {
-                return new GZIPInputStream(is);
-            }
-
-            @Override
-            protected OutputStream createCompressStream(OutputStream os) throws IOException {
-                return new GZIPOutputStream(os);
-            }
-        },
-        ZSTD(".zst", "com.github.luben.zstd.ZstdDecompressCtx") {
-            @Override
-            protected InputStream createDecompressStream(InputStream is) throws IOException {
-                checkDependencyPresent("ZSTD decompression");
-                return new com.github.luben.zstd.ZstdInputStream(is);
-            }
-
-            @Override
-            protected OutputStream createCompressStream(OutputStream os) throws IOException {
-                checkDependencyPresent("ZSTD compression");
-                return new com.github.luben.zstd.ZstdOutputStream(os);
-            }
-        },
-        BROTLI(".br", "com.aayushatharva.brotli4j.decoder.BrotliInputStream") {
-            @Override
-            protected InputStream createDecompressStream(InputStream is) throws IOException {
-                checkDependencyPresent("BROTLI decompression");
-                return new com.aayushatharva.brotli4j.decoder.BrotliInputStream(is);
-            }
-
-            @Override
-            protected OutputStream createCompressStream(OutputStream os) throws IOException {
-                checkDependencyPresent("BROTLI compression");
-                return new com.aayushatharva.brotli4j.encoder.BrotliOutputStream(os);
-            }
-        };
-
-        private static final int BUFFER_SIZE = 1024;
-        private final String fileExtension;
-        private final boolean hasDependency;
-
-        Compress(String fileExtension) {
-            this(fileExtension, null);
-        }
-
-        Compress(String fileExtension, String dependencyClass) {
-            this.fileExtension = fileExtension;
-            this.hasDependency = dependencyClass == null || Reflect.hasClass(dependencyClass);
-        }
-
-        private static void copyStream(InputStream is, OutputStream os) throws IOException {
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int len;
-            while ((len = is.read(buffer)) != -1) {
-                os.write(buffer, 0, len);
-            }
-        }
-
-        public String getFileExtension() {
-            return fileExtension;
-        }
-
-        protected void checkDependencyPresent(String operation) throws IOException {
-            if (!hasDependency)
-                throw new IOException(operation + " requires the " + name() + " library to be present on the classpath");
-        }
-
-        public void decompress(InputStream is, OutputStream os) throws IOException {
-            try (InputStream decompressStream = createDecompressStream(is)) {
-                copyStream(decompressStream, os);
-            }
-        }
-
-        public void compress(InputStream is, OutputStream os) throws IOException {
-            try (OutputStream compressStream = createCompressStream(os)) {
-                copyStream(is, compressStream);
-            }
-        }
-
-        protected abstract InputStream createDecompressStream(InputStream is) throws IOException;
-
-        protected abstract OutputStream createCompressStream(OutputStream os) throws IOException;
     }
 }
