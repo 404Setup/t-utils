@@ -582,12 +582,12 @@ public class SimplePatcher {
                                          @Nullable ICompress compression,
                                          boolean isCompressing) throws IOException {
         if (compression == null) {
-            if (input instanceof ByteArrayOutputStream) {
-                ((ByteArrayOutputStream) input).writeTo(output);
-            } else if (input instanceof InputStream inputStream) {
+            if (input instanceof ByteArrayOutputStream baos) {
+                baos.writeTo(output);
+            } else if (input instanceof InputStream is) {
                 byte[] buffer = new byte[CHUNK_SIZE];
                 int read;
-                while ((read = inputStream.read(buffer)) != -1) {
+                while ((read = is.read(buffer)) != -1) {
                     output.write(buffer, 0, read);
                 }
             }
