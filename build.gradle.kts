@@ -8,8 +8,8 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.31.0"
 }
 
-group = "one.tranic"
-version = "1.3.0"
+group = "one.pkg"
+version = "1.4.0"
 
 repositories {
     mavenCentral()
