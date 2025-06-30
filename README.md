@@ -1,12 +1,11 @@
-# TUtils
+# Tiny Utils
 
-[![Maven Central Version](https://img.shields.io/maven-central/v/one.tranic/t-utils)](https://central.sonatype.com/artifact/one.tranic/t-utils)
-[![javadoc](https://javadoc.io/badge2/one.tranic/t-utils/javadoc.svg)](https://javadoc.io/doc/one.tranic/t-utils)
+[![Maven Central Version](https://img.shields.io/maven-central/v/one.pkg/tiny-utils)](https://central.sonatype.com/artifact/one.pkg/tiny-utils)
+[![javadoc](https://javadoc.io/badge2/one.pkg/tiny-utils/javadoc.svg)](https://javadoc.io/doc/one.pkg/tiny-utils)
 
-No need to install TLIB Base, need Java 17.
+need Java 17.
 
 ## Install
-Please use shadow to remap TUtils to your own path to avoid conflicts with other libraries/plugins using TUtils.
 
 `maven`
 
