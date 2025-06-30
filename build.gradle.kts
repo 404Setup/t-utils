@@ -55,13 +55,13 @@ configurations.api {
 }
 
 mavenPublishing {
-    coordinates(group as String, "t-utils", version as String)
+    coordinates(group as String, "tiny-utils", version as String)
 
     pom {
-        name.set("TUtils")
+        name.set("TinyUtils")
         description.set("Basic Development Library")
         inceptionYear.set("2025")
-        url.set("https://github.com/404Setup/t-utils")
+        url.set("https://github.com/404Setup/tiny-utils")
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
@@ -77,9 +77,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/404Setup/t-utils")
-            connection.set("scm:git:git://github.com/404Setup/t-utils.git")
-            developerConnection.set("scm:git:ssh://git@github.com/404Setup/t-utils.git")
+            url.set("https://github.com/404Setup/tiny-utils")
+            connection.set("scm:git:git://github.com/404Setup/tiny-utils.git")
+            developerConnection.set("scm:git:ssh://git@github.com/404Setup/tiny-utils.git")
         }
 
         /*withXml {

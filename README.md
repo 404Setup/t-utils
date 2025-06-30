@@ -12,8 +12,8 @@ Please use shadow to remap TUtils to your own path to avoid conflicts with other
 
 ```xml
 <dependency>
-    <groupId>one.tranic</groupId>
-    <artifactId>t-utils</artifactId>
+    <groupId>one.pkg</groupId>
+    <artifactId>tiny-utils</artifactId>
     <version>[VERSION]</version>
 </dependency>
 ```
@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'one.tranic:t-utils:[VERSION]'
+    implementation 'one.pkg:tiny-utils:[VERSION]'
 }
 ```
 
@@ -36,6 +36,6 @@ repositories {
 }
 
 dependencies {
-    implementation("one.tranic:t-utils:[VERSION]")
+    implementation("one.pkg:tiny-utils:[VERSION]")
 }
 ```

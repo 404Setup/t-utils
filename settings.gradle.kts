@@ -1,2 +1,2 @@
-rootProject.name = "t-utils"
+rootProject.name = "TinyUtils"
 
