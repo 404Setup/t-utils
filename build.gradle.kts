@@ -1,15 +1,13 @@
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
     `java-library`
     idea
     signing
 
-    id("com.vanniktech.maven.publish") version "0.31.0"
+    id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 group = "one.pkg"
-version = "1.4.0"
+version = "1.5.0"
 
 repositories {
     mavenCentral()
@@ -18,7 +16,7 @@ repositories {
 dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
 
-    compileOnly("com.github.luben:zstd-jni:1.5.7-3")
+    compileOnly("com.github.luben:zstd-jni:1.5.7-4")
     compileOnly("com.aayushatharva.brotli4j:brotli4j:1.18.0")
     compileOnly("it.unimi.dsi:fastutil:8.5.15")
 }
@@ -59,7 +57,7 @@ mavenPublishing {
 
     pom {
         name.set("TinyUtils")
-        description.set("Basic Development Library")
+        description.set("Small auxiliary development tools")
         inceptionYear.set("2025")
         url.set("https://github.com/404Setup/tiny-utils")
         licenses {
@@ -81,17 +79,9 @@ mavenPublishing {
             connection.set("scm:git:git://github.com/404Setup/tiny-utils.git")
             developerConnection.set("scm:git:ssh://git@github.com/404Setup/tiny-utils.git")
         }
-
-        /*withXml {
-            val root = asNode()
-            val nodes = root["dependencies"] as NodeList
-            if (nodes.isNotEmpty()) {
-                root.remove(nodes.first() as Node)
-            }
-        }*/
     }
 
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
 
     signAllPublications()
 }

@@ -1,6 +1,6 @@
-package one.tranic.t.utils.minecraft;
+package one.pkg.tiny.utils.minecraft;
 
-import one.tranic.t.utils.Collections;
+import one.pkg.tiny.utils.Collections;
 
 import java.util.Map;
 
@@ -40,7 +40,7 @@ public enum ProtocolVersion {
     PLAY_1_18(757), PLAY_1_18_2(758),
     PLAY_1_19(759), PLAY_1_19_1(760), PLAY_1_19_3(761), PLAY_1_19_4(762),
     PLAY_1_20(763), PLAY_1_20_2(764), PLAY_1_20_3(765), PLAY_1_20_5(766),
-    PLAY_1_21(767), PLAY_1_21_2(768), PLAY_1_21_4(769), PLAY_1_21_5(770), PLAY_1_21_6(771), PLAY_1_21_7(772),
+    PLAY_1_21(767), PLAY_1_21_2(768), PLAY_1_21_4(769), PLAY_1_21_5(770), PLAY_1_21_6(771), PLAY_1_21_7(772), PLAY_1_21_9(773),
     ;
 
     private static final int MINIMUM_SUPPORTED_PROTOCOL_VERSION = 3;

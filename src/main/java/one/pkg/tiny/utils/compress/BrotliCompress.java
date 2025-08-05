@@ -1,6 +1,6 @@
-package one.tranic.t.utils.compress;
+package one.pkg.tiny.utils.compress;
 
-import one.tranic.t.utils.Reflect;
+import one.pkg.tiny.utils.Reflect;
 
 import java.io.IOException;
 import java.io.InputStream;

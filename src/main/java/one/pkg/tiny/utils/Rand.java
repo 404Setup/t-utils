@@ -1,4 +1,4 @@
-package one.tranic.t.utils;
+package one.pkg.tiny.utils;
 
 import org.jetbrains.annotations.Range;
 

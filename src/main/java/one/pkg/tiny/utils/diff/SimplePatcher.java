@@ -1,6 +1,6 @@
-package one.tranic.t.utils.diff;
+package one.pkg.tiny.utils.diff;
 
-import one.tranic.t.utils.compress.ICompress;
+import one.pkg.tiny.utils.compress.ICompress;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 

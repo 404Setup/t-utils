@@ -1,4 +1,4 @@
-package one.tranic.t.utils.compress;
+package one.pkg.tiny.utils.compress;
 
 import java.io.IOException;
 import java.io.InputStream;

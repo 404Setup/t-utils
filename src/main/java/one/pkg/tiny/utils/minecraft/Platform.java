@@ -1,6 +1,6 @@
-package one.tranic.t.utils.minecraft;
+package one.pkg.tiny.utils.minecraft;
 
-import one.tranic.t.utils.Reflect;
+import one.pkg.tiny.utils.Reflect;
 import org.jetbrains.annotations.NotNull;
 
 /**

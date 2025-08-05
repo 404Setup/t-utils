@@ -1,4 +1,4 @@
-package one.tranic.t.utils.minecraft;
+package one.pkg.tiny.utils.minecraft;
 
 @SuppressWarnings("unused")
 public class Command {
